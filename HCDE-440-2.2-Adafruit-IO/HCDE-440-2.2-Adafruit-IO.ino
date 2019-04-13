@@ -11,11 +11,17 @@
 //
 // All text above must be included in any redistribution.
 
+
+// https://io.adafruit.com/willayang/dashboards/dashboard
+// The circuit includes one photosensor and one temperature and humidity
+// sensor. This sketch is able to connect sensors to the "temperature"
+// "humidity" and "light" feeds on Adafruit IO so that data can be accessed
+// online.
+// To achieve this, we need the DHT and Adafruit Sensor libraries. We set up
+// each of the feed on Adafruit IO and then connects our sensors to Adafruit IO
+// io then keeps us connected to io.adafruit.com and processes data
 /************************** Configuration ***********************************/
 
-// edit the config.h tab and enter your Adafruit IO credentials
-// and any additional configuration needed for WiFi, cellular,
-// or ethernet clients.
 #include "config.h"
 
 /************************ Example Starts Here *******************************/
