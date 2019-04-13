@@ -16,25 +16,36 @@
 // edit the config.h tab and enter your Adafruit IO credentials
 // and any additional configuration needed for WiFi, cellular,
 // or ethernet clients.
-#include "config.h"0
+#include "config.h"
 
 /************************ Example Starts Here *******************************/
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
 
-// digital pin 5
-#define BUTTON_PIN 2
+// analog pin 0
+#define PHOTOCELL_PIN A0
 
-// button state
-bool current = false;
-bool last = false;
+// pin connected to DH22 data line
+#define DATA_PIN 12
 
-// set up the 'digital' feed
-AdafruitIO_Feed *digital = io.feed("button");
+// create DHT22 instance
+DHT_Unified dht(DATA_PIN, DHT22);
+
+
+// photocell state
+int current = 0;
+int last = -1;
+
+// set up the 'light' feed
+AdafruitIO_Feed *light = io.feed("light");
+// set up the 'temperature' and 'humidity' feeds
+AdafruitIO_Feed *temperature = io.feed("Temperature");
+AdafruitIO_Feed *humidity = io.feed("Humidity");
 
 void setup() {
 
-  // set button pin as an input
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-
+  
   // start the serial connection
   Serial.begin(115200);
   Serial.print("This board is running: ");
@@ -44,7 +55,10 @@ void setup() {
    
   // wait for serial monitor to open
   while(! Serial);
-
+  
+  // initialize dht22  
+  dht.begin();
+  
   // connect to io.adafruit.com
   Serial.print("Connecting to Adafruit IO");
   io.connect();
@@ -68,25 +82,56 @@ void loop() {
   // function. it keeps the client connected to
   // io.adafruit.com, and processes any incoming data.
   io.run();
+  
+  // Get temperature event and print its value
+  sensors_event_t event;
+  dht.temperature().getEvent(&event);
 
-  // grab the current state of the button.
-  // we have to flip the logic because we are
-  // using a pullup resistor.
-  if(digitalRead(BUTTON_PIN) == LOW)
-    current = true;
-  else
-    current = false;
+  float celsius = event.temperature;
+  float fahrenheit = (celsius * 1.8) + 32;
 
+  Serial.print("celsius: ");
+  Serial.print(celsius);
+  Serial.println("C");
+
+  Serial.print("fahrenheit: ");
+  Serial.print(fahrenheit);
+  Serial.println("F");
+
+  // save fahrenheit (or celsius) to Adafruit IO
+  temperature->save(fahrenheit);
+  
+  // Get humidity event and print its value
+  dht.humidity().getEvent(&event);
+
+  Serial.print("humidity: ");
+  Serial.print(event.relative_humidity);
+  Serial.println("%");
+
+
+  // save humidity to Adafruit IO
+  humidity->save(event.relative_humidity);
+    
+  // grab the current state of the photocell
+  current = analogRead(PHOTOCELL_PIN);
+  
   // return if the value hasn't changed
-  if(current == last)
+  if(current == last) {
+    Serial.println("current == last");    
     return;
-
-  // save the current state to the 'digital' feed on adafruit io
-  Serial.print("sending button -> ");
+  }
+  
+    
+  // save the current state to the 'light' feed on adafruit io
+  Serial.print("sending -> ");
   Serial.println(current);
-  digital->save(current);
+  light->save(current);
 
-  // store last button state
+  
+  // store last photocell state
   last = current;
+  
+  // wait 5 seconds (5000 milliseconds == 5 seconds)
+  delay(5000);
 
 }
